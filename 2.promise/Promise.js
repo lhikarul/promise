@@ -2,6 +2,10 @@ const PENDING = "PENDING";
 const RESOLVED = "RESOLVED";
 const REJECTED = "REJECTED";
 
+const resolvePromise = (promise,x,resolve,reject) => {
+
+}
+
 class Promise {
     constructor (executor) {
 
@@ -39,22 +43,60 @@ class Promise {
     }
     then (onfullfilled,onrejected) {
         
-        if (this.status === RESOLVED) {
-            onfullfilled(this.value);
-        }
-        if (this.status === REJECTED) {
-            onrejected(this.reason);
-        }
+        let promise2 = new Promise((resolve,reject) => {
+            if (this.status === RESOLVED) {
+                try {
+                    setTimeout(() => {
+                        let x = onfullfilled(this.value);
+    
+                        // x 可能是普通值, 也可能是 promise
+                        // 判斷 x 的值 --> promise 2 的狀態
+                        resolvePromise(promise2,x,resolve,reject);
+                    },0);
+                }catch(e) {
+                    reject(e);
+                }
+            }
+            if (this.status === REJECTED) {
+                try {
+                    setTimeout(() => {
+                        let x = onrejected(this.reason);
+                        resolvePromise(promise2,x,resolve,reject);
+                    },0);
+                }catch(e) {
+                    reject(e);
+                }
+            }
+    
+            if (this.status === PENDING) {
+                // 非同步處理
+                this.onResolvedCallbacks.push(() => {
+                    try {
+                        setTimeout(() => {
+                            let x = onfullfilled(this.value);
+        
+                            // x 可能是普通值, 也可能是 promise
+                            // 判斷 x 的值 --> promise 2 的狀態
+                            resolvePromise(promise2,x,resolve,reject);
+                        },0);
+                    }catch(e) {
+                        reject(e);
+                    }
+                })
+                this.onRejectedCallbacks.push(() => {
+                    try {
+                        setTimeout(() => {
+                            let x = onrejected(this.reason);
+                            resolvePromise(promise2,x,resolve,reject);
+                        },0);
+                    }catch(e) {
+                        reject(e);
+                    }
+                })
+            }
+        })
 
-        if (this.status === PENDING) {
-            // 非同步處理
-            this.onResolvedCallbacks.push(() => {
-                onfullfilled(this.value);
-            })
-            this.onRejectedCallbacks.push(() => {
-                onrejected(this.reason);
-            })
-        }
+        return promise2;
     }
 }
 
